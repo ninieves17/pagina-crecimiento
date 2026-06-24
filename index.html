@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crecimiento Poblacional - Puebla y Modelo Logístico</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MathJax for mathematical formulas -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-decorations">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fa-solid fa-chart-line logo-icon"></i>
+                <span class="logo-text">Puebla<span class="highlight">Logístico</span></span>
+            </div>
+            <p class="tagline">Modelación matemática del crecimiento de la población urbana</p>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <!-- Navigation Tabs -->
+        <nav class="tab-navigation" aria-label="Navegación Principal">
+            <button class="tab-btn active" data-tab="tab-overview" id="btn-overview">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>Visión General y Mapa</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-simulator" id="btn-simulator">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Simulador Interactivo</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-math" id="btn-math">
+                <i class="fa-solid fa-square-root-variable"></i>
+                <span>Modelo Matemático</span>
+            </button>
+        </nav>
+
+        <!-- Dynamic Notifications/Toast -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content-wrapper">
+            
+            <!-- TAB 1: STORYTELLING AND MAP -->
+            <section id="tab-overview" class="tab-pane active" aria-labelledby="btn-overview">
+                <div class="storytelling-grid">
+                    <!-- Column 1: Story & Context -->
+                    <div class="card glass-card story-card">
+                        <div class="card-header">
+                            <span class="badge">Historia Demográfica</span>
+                            <h2>El Crecimiento de Puebla a Través de las Décadas</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>El Estado de Puebla ha experimentado una transformación demográfica y urbana acelerada. En la década de <strong>1950</strong>, Puebla era un estado predominantemente rural con alrededor de 1.62 millones de habitantes. Sin embargo, la industrialización (como la llegada del sector automotriz en los años 60) impulsó una migración masiva del campo a la ciudad.</p>
+                            <p>Para el año <strong>2000</strong>, la población superó los 5.07 millones de habitantes. De acuerdo con el censo del INEGI, en <strong>2020</strong> la entidad alcanzó los <strong>6.58 millones</strong>, consolidándose como una de las áreas metropolitanas más densas del país.</p>
+                            <p>El modelo logístico demuestra cómo la población tiende hacia una capacidad de carga $K$ impulsada por factores físicos, recursos limitados, y dinámicas económicas. En esta sección comparamos la curva de crecimiento real con las estimaciones futuras.</p>
+                            
+                            <div class="stats-summary">
+                                <div class="stat-item">
+                                    <span class="stat-value">1.62M</span>
+                                    <span class="stat-label">Población (1950)</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">6.58M</span>
+                                    <span class="stat-label">Población (2020)</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">1.46%</span>
+                                    <span class="stat-label">Tasa Crec. Promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Historical vs Projection Chart -->
+                    <div class="card glass-card chart-card">
+                        <div class="card-header">
+                            <span class="badge">Visualización de Datos</span>
+                            <h3>Histórico vs. Proyección Sigmoide (Puebla 1950 - 2080)</h3>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="historicalChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Maps and Heatmap Overlay -->
+                <div class="map-grid">
+                    <div class="card glass-card map-card">
+                        <div class="card-header">
+                            <span class="badge">Espacial</span>
+                            <h3>Distribución y Densidad de la Población Metropolitana</h3>
+                        </div>
+                        <div class="card-body map-wrapper">
+                            <!-- Overlay controls for simulator -->
+                            <div class="map-controls">
+                                <button id="btn-toggle-heatmap" class="btn-secondary active">
+                                    <i class="fa-solid fa-fire"></i> Mapa de Calor
+                                </button>
+                                <button id="btn-toggle-markers" class="btn-secondary">
+                                    <i class="fa-solid fa-users"></i> Indicadores de Densidad
+                                </button>
+                            </div>
+                            
+                            <!-- Google Maps Container with simulation overlay -->
+                            <div class="map-container-relative" id="google-maps-container">
+                                <!-- Placeholder for Google Maps API iframe -->
+                                <iframe 
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241315.65345700755!2d-98.33044991195655!3d19.04018260416972!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85cfc0d412d0df05%3A0x6e9f1a26d7f02d09!2sPuebla%2C%20Pue.!5e0!3m2!1ses-419!2smx!4v1687500000000!5m2!1ses-419!2smx" 
+                                    width="100%" 
+                                    height="100%" 
+                                    style="border:0;" 
+                                    allowfullscreen="" 
+                                    loading="lazy" 
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    id="gmaps-iframe">
+                                </iframe>
+                                
+                                <!-- Heatmap CSS simulation overlay -->
+                                <div id="map-heatmap-overlay" class="map-overlay-layer heatmap-active">
+                                    <div class="heat-point heat-center" style="top: 50%; left: 52%; --size: 180px; --intensity: 0.85;"></div>
+                                    <div class="heat-point heat-north" style="top: 38%; left: 55%; --size: 120px; --intensity: 0.65;"></div>
+                                    <div class="heat-point heat-east" style="top: 52%; left: 63%; --size: 110px; --intensity: 0.6;"></div>
+                                    <div class="heat-point heat-south" style="top: 65%; left: 47%; --size: 130px; --intensity: 0.55;"></div>
+                                    <div class="heat-point heat-cholula" style="top: 48%; left: 40%; --size: 140px; --intensity: 0.7;"></div>
+                                </div>
+
+                                <!-- Density markers overlay -->
+                                <div id="map-markers-overlay" class="map-overlay-layer display-none">
+                                    <!-- Dynamic markers will be rendered here by JS -->
+                                    <div class="density-marker" style="top: 49%; left: 51%;">
+                                        <div class="marker-pulse"></div>
+                                        <div class="marker-label"><i class="fa-solid fa-users"></i> Centro</div>
+                                    </div>
+                                    <div class="density-marker" style="top: 47%; left: 39%;">
+                                        <div class="marker-pulse"></div>
+                                        <div class="marker-label"><i class="fa-solid fa-users"></i> Cholula</div>
+                                    </div>
+                                    <div class="density-marker" style="top: 36%; left: 54%;">
+                                        <div class="marker-pulse"></div>
+                                        <div class="marker-label"><i class="fa-solid fa-users"></i> Nte-Finsa</div>
+                                    </div>
+                                    <div class="density-marker" style="top: 66%; left: 48%;">
+                                        <div class="marker-pulse"></div>
+                                        <div class="marker-label"><i class="fa-solid fa-users"></i> Sur-Valsequillo</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="map-caption">
+                                <i class="fa-solid fa-circle-info"></i> El área metropolitana de Puebla-Tlaxcala concentra más del 70% de la densidad habitacional de la región central del estado. Las zonas de calor muestran los principales núcleos de saturación.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: INTERACTIVE SIMULATOR -->
+            <section id="tab-simulator" class="tab-pane" aria-labelledby="btn-simulator">
+                <div class="simulator-grid">
+                    
+                    <!-- Columns for Inputs/Calculations -->
+                    <div class="simulator-controls-column">
+                        
+                        <!-- Block 1: Forward Calculator -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <span class="badge badge-primary">Directo</span>
+                                <h2>Proyección Poblacional Futura</h2>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-forward" class="sim-form">
+                                    <div class="form-group">
+                                        <label for="input-p0">
+                                            Población Inicial ($P_0$) <span class="unit">(millones de hab.)</span>
+                                            <i class="fa-solid fa-circle-question tooltip-trigger" title="La población inicial medida al tiempo t = 0."></i>
+                                        </label>
+                                        <input type="number" step="any" id="input-p0" name="p0" value="6.58" required min="0.001">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-k">
+                                            Capacidad de Carga ($K$) <span class="unit">(millones de hab.)</span>
+                                            <i class="fa-solid fa-circle-question tooltip-trigger" title="Límite máximo que el entorno físico y los recursos pueden soportar indefinidamente."></i>
+                                        </label>
+                                        <input type="number" step="any" id="input-k" name="k" value="10.00" required min="0.001">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-r">
+                                            Tasa de Crecimiento ($r$) <span class="unit">(ej. 0.02 para 2%)</span>
+                                            <i class="fa-solid fa-circle-question tooltip-trigger" title="Tasa de crecimiento instantáneo (en formato decimal). Indica la velocidad de crecimiento inicial sin restricciones."></i>
+                                        </label>
+                                        <input type="number" step="any" id="input-r" name="r" value="0.025" required min="0.001" max="1">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="input-t">
+                                            Años a Proyectar ($t$) <span class="unit">(años)</span>
+                                            <i class="fa-solid fa-circle-question tooltip-trigger" title="El tiempo transcurrido en años desde el año de origen (t=0)."></i>
+                                        </label>
+                                        <input type="number" step="any" id="input-t" name="t" value="30" required min="0">
+                                    </div>
+
+                                    <button type="submit" id="btn-calc-forward" class="btn-primary">
+                                        <i class="fa-solid fa-calculator"></i> Proyectar Población
+                                    </button>
+                                </form>
+
+                                <!-- Output box for Forward -->
+                                <div id="forward-output" class="output-box display-none">
+                                    <div class="output-header">Población Proyectada</div>
+                                    <div class="output-value"><span id="result-p-t">0.00</span> M hab.</div>
+                                    <p class="output-desc">En <span id="result-years">0</span> años, la población crecerá un <span id="result-percentage">0%</span>, alcanzando el <span id="result-pct-k">0%</span> de su capacidad de carga máxima $K$.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Block 2: Reverse Calculator -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <span class="badge badge-accent">Inverso</span>
+                                <h2>Tiempo para Población Objetivo</h2>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-reverse" class="sim-form">
+                                    <div class="form-group">
+                                        <label for="input-p-target">
+                                            Población Objetivo ($P_{\text{objetivo}}$) <span class="unit">(millones de hab.)</span>
+                                            <i class="fa-solid fa-circle-question tooltip-trigger" title="La población final deseada. Debe ser mayor a P0 y menor a la capacidad de carga K."></i>
+                                        </label>
+                                        <input type="number" step="any" id="input-p-target" name="p_target" value="8.50" required min="0.001">
+                                    </div>
+
+                                    <button type="submit" id="btn-calc-reverse" class="btn-accent">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> Calcular Tiempo Requerido
+                                    </button>
+                                </form>
+
+                                <!-- Output box for Reverse -->
+                                <div id="reverse-output" class="output-box-accent display-none">
+                                    <div class="output-header">Tiempo Estimado</div>
+                                    <div class="output-value"><span id="result-t-target">0.0</span> años</div>
+                                    <p class="output-desc">Tomará aproximadamente esta cantidad de tiempo alcanzar la población objetivo bajo los parámetros actuales ($P_0, K, r$).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Column for Plot/Visual Chart -->
+                    <div class="simulator-chart-column">
+                        <div class="card glass-card simulator-chart-card">
+                            <div class="card-header">
+                                <span class="badge">Simulación Gráfica</span>
+                                <h3>Curva de Crecimiento Logístico (Aplanamiento por Asíntota K)</h3>
+                            </div>
+                            <div class="card-body chart-container">
+                                <canvas id="simulatorChart"></canvas>
+                            </div>
+                            <div class="chart-legend-overlay">
+                                <div><span class="legend-color-dot p0-dot"></span>Población Inicial ($P_0$)</div>
+                                <div><span class="legend-color-dot pt-dot"></span>Población Proyectada ($P(t)$)</div>
+                                <div><span class="legend-color-dot k-dot"></span>Capacidad de Carga ($K$)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 3: MATHEMATICAL MODEL AND SOLUTION -->
+            <section id="tab-math" class="tab-pane" aria-labelledby="btn-math">
+                <div class="math-container">
+                    
+                    <!-- Summary Card -->
+                    <div class="card glass-card math-intro-card">
+                        <div class="card-header">
+                            <span class="badge">Ecuación Diferencial</span>
+                            <h2>El Modelo Logístico (Verhulst, 1838)</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>El crecimiento demográfico sin restricciones (modelo maltusiano) asume que los recursos son infinitos, resultando en un crecimiento exponencial $dP/dt = rP$. Pierre François Verhulst introdujo una corrección que toma en cuenta la competencia por recursos limitados, multiplicando la tasa por un factor de amortiguamiento lineal $(1 - P/K)$, que frena el crecimiento a medida que la población se acerca al límite.</p>
+                            
+                            <div class="equation-showcase">
+                                $$\frac{dP}{dt} = rP\left(1 - \frac{P}{K}\right)$$
+                            </div>
+                            
+                            <p class="equation-caption">Donde $P$ es la población, $t$ es el tiempo, $r$ es la tasa de crecimiento intrínseca, y $K$ es la capacidad de carga ambiental.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Mathematical Derivation -->
+                    <div class="card glass-card math-steps-card">
+                        <div class="card-header">
+                            <span class="badge">Paso a Paso</span>
+                            <h2>Solución Analítica de la Ecuación Diferencial</h2>
+                        </div>
+                        <div class="card-body math-steps">
+                            
+                            <!-- Step 1 -->
+                            <div class="math-step">
+                                <div class="step-num">1</div>
+                                <div class="step-content">
+                                    <h4>Separación de Variables</h4>
+                                    <p>Para resolver la ecuación diferencial ordinaria, agrupamos todas las variables con respecto a $P$ en el lado izquierdo y con respecto a $t$ en el derecho:</p>
+                                    $$\frac{dP}{P\left(1 - \frac{P}{K}\right)} = r \, dt$$
+                                    <p>Multiplicamos el numerador y denominador del lado izquierdo por $K$ para simplificar la fracción:</p>
+                                    $$\frac{K \, dP}{P(K - P)} = r \, dt$$
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="math-step">
+                                <div class="step-num">2</div>
+                                <div class="step-content">
+                                    <h4>Descomposición en Fracciones Parciales</h4>
+                                    <p>Descomponemos el integrando en una suma de fracciones más simples:</p>
+                                    $$\frac{K}{P(K - P)} = \frac{A}{P} + \frac{B}{K - P}$$
+                                    <p>Para encontrar las constantes $A$ y $B$, resolvemos para el numerador:</p>
+                                    $$K = A(K - P) + BP$$
+                                    <ul>
+                                        <li>Si evaluamos en $P = 0$: $K = A(K) \implies A = 1$</li>
+                                        <li>Si evaluamos en $P = K$: $K = B(K) \implies B = 1$</li>
+                                    </ul>
+                                    <p>Por lo tanto, la ecuación se reescribe como:</p>
+                                    $$\left( \frac{1}{P} + \frac{1}{K - P} \right) dP = r \, dt$$
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="math-step">
+                                <div class="step-num">3</div>
+                                <div class="step-content">
+                                    <h4>Integración de ambos miembros</h4>
+                                    <p>Integramos ambos lados de la ecuación:</p>
+                                    $$\int \left( \frac{1}{P} + \frac{1}{K - P} \right) dP = \int r \, dt$$
+                                    <p>Aplicando las reglas del logaritmo natural y recordando usar la regla de la cadena para el segundo término ($\int \frac{1}{K-P}dP = -\ln|K-P|$):</p>
+                                    $$\ln(P) - \ln(K - P) = r t + C$$
+                                    <p>Usando las propiedades de los logaritmos ($\ln A - \ln B = \ln(A/B)$):</p>
+                                    $$\ln\left(\frac{P}{K - P}\right) = r t + C$$
+                                </div>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="math-step">
+                                <div class="step-num">4</div>
+                                <div class="step-content">
+                                    <h4>Despeje y Aplicación de la Condición Inicial</h4>
+                                    <p>Aplicamos la función exponencial en ambos lados para eliminar el logaritmo:</p>
+                                    $$\frac{P}{K - P} = e^{rt + C} = e^C \cdot e^{rt}$$
+                                    <p>Definimos una nueva constante $A_0 = e^C$. Al tiempo inicial $t = 0$, la población es $P(0) = P_0$, por lo tanto:</p>
+                                    $$A_0 = \frac{P_0}{K - P_0}$$
+                                    <p>Sustituimos $A_0$ de vuelta en la ecuación:</p>
+                                    $$\frac{P(t)}{K - P(t)} = \left(\frac{P_0}{K - P_0}\right) e^{rt}$$
+                                </div>
+                            </div>
+
+                            <!-- Step 5 -->
+                            <div class="math-step">
+                                <div class="step-num">5</div>
+                                <div class="step-content">
+                                    <h4>Despeje de $P(t)$ (Fórmula Final)</h4>
+                                    <p>Tomamos el recíproco de ambos lados para facilitar el despeje:</p>
+                                    $$\frac{K - P(t)}{P(t)} = \left(\frac{K - P_0}{P_0}\right) e^{-rt}$$
+                                    $$\frac{K}{P(t)} - 1 = \left(\frac{K - P_0}{P_0}\right) e^{-rt}$$
+                                    $$\frac{K}{P(t)} = 1 + \left(\frac{K - P_0}{P_0}\right) e^{-rt}$$
+                                    <p>Finalmente, multiplicamos e invertimos la fracción para obtener la fórmula de proyección utilizada en la Pestaña 2:</p>
+                                    <div class="final-formula-box">
+                                        $$P(t) = \frac{K}{1 + \left(\frac{K - P_0}{P_0}\right) e^{-rt}}$$
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 - Universidad y Modelación Demográfica de Puebla. Todos los derechos reservados.</p>
+        <p class="api-note">El mapa interactivo simula la densidad poblacional a partir de datos geoespaciales agregados.</p>
+    </footer>
+
+    <!-- Google Maps API (Placeholder con indicador de KEY) -->
+    <!-- Reemplazar 'YOUR_API_KEY' con una clave válida de Google Maps JavaScript API -->
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script> -->
+
+    <!-- Custom Logic Script -->
+    <script src="script.js"></script>
+</body>
+</html>
